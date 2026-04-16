@@ -1,3 +1,5 @@
+celery/out/*
+celery/task_id.txt
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
