@@ -5,9 +5,9 @@ import time
 # Initialize Celery
 # 'pyamqp://' is the protocol for RabbitMQ. 'guest@localhost//' is the default credential.
 # 'rpc://' sends the results back as transient AMQP messages.
-app = Celery('tasks',
-             broker='redis://localhost:6379/0',
-             backend='redis://localhost:6379/0')
+app = Celery(
+    "tasks", broker="redis://localhost:6379/0", backend="redis://localhost:6379/0"
+)
 #              broker='pyamqp://guest@localhost:5672//',
 #              backend='rpc://')
 

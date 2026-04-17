@@ -4,7 +4,7 @@ from tasks import app
 
 def check_task_status(saved_id):
     res = AsyncResult(saved_id, app=app)
-    
+
     if res.ready():
         if res.successful():
             print(f"Success! Result: {res.result}")
