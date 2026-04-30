@@ -1,6 +1,7 @@
 rest/shop.db
 celery/out/*
 celery/task_id.txt
+.vscode/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
