@@ -5,7 +5,7 @@ import bcrypt
 from fastapi import Depends, HTTPException, APIRouter, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import jwt
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_customer, get_db
 from models import Customer
@@ -19,12 +19,13 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)], session: Session = Depends(get_db)
+async def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    session: AsyncSession = Depends(get_db),
 ) -> Customer:
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     email = payload["sub"]
-    customer = get_customer(email, session)
+    customer = await get_customer(email, session)
     if not customer:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED)
     return customer
@@ -39,9 +40,10 @@ def create_access_token(username):
 
 @router.post("/token")
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_db)
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    session: AsyncSession = Depends(get_db),
 ):
-    customer = get_customer(form_data.username, session)
+    customer = await get_customer(form_data.username, session)
     if not customer or not bcrypt.checkpw(
         form_data.password.encode("utf-8"), customer.password
     ):

@@ -1,13 +1,14 @@
 import os
 
 from dotenv import load_dotenv
-from fastapi import Depends, HTTPException, APIRouter, status
+from fastapi import Depends, APIRouter
 from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 from stripe import StripeClient
 
 from db import get_db, get_cart_items
-from models import Customer, CartItem, Order, OrderItem
+from models import Customer, Order, OrderItem
 from schemas import OrderItemResponse, OrderResponse
 from .security import get_current_user
 
@@ -17,16 +18,16 @@ router = APIRouter()
 
 
 @router.post("/")
-def checkout(
+async def checkout(
     customer: Customer = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     # 1. Create Order with the confirmed payment intent
     # 2. Create OrderItem based on CartItem
     # 3. Remove CartItem that belong to the current customer
-    cart_items = get_cart_items(customer.id, db)
+    cart_items = await get_cart_items(customer.id, db)
     total_price = sum(item.subtotal for item in cart_items)
-    intent = stripe_client.v1.payment_intents.create(
+    intent = await stripe_client.v1.payment_intents.create_async(
         params={
             "amount": int(total_price * 100),
             "currency": "usd",
@@ -39,7 +40,7 @@ def checkout(
         stripe_payment_inten_id=intent.id,
     )
     db.add(order)
-    db.flush()  # Get the order.id for OrderItem creation
+    await db.flush()  # Get the order.id for OrderItem creation
 
     for cart_item in cart_items:
         order_item = OrderItem(
@@ -50,32 +51,33 @@ def checkout(
         db.add(order_item)
 
     for cart_item in cart_items:
-        db.delete(cart_item)
-    db.commit()
+        await db.delete(cart_item)
+    await db.commit()
 
-    confirmed_intent = stripe_client.v1.payment_intents.confirm(
+    confirmed_intent = await stripe_client.v1.payment_intents.confirm_async(
         intent.id, params={"payment_method": "pm_card_visa"}
     )
     return confirmed_intent.id
 
 
 @router.get("/", response_model=list[OrderResponse])
-def get_oders(
+async def get_oders(
     customer: Customer = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    orders = (
+    stmt = (
         select(Order)
         .where(Order.customer_id == customer.id)
         .options(joinedload(Order.items))
     )
+    result = await db.execute(stmt)
     responses = []
-    for order in db.execute(orders).unique().scalars():
+    for order in result.unique().scalars():
         items = [OrderItemResponse.model_validate(item) for item in order.items]
         resp = OrderResponse(
-            id=order.id,  # pyright: ignore[reportArgumentType]
+            id=order.id,
             items=items,
-            customer_id=order.customer_id,  # pyright: ignore[reportArgumentType]
+            customer_id=order.customer_id,
             stripe_payment_intent_id=order.stripe_payment_inten_id,
         )
         responses.append(resp)
@@ -83,6 +85,6 @@ def get_oders(
 
 
 @router.get("/check_payment")
-def check_payment_id(intent_id: str):
-    intent = stripe_client.v1.payment_intents.retrieve(intent_id)
+async def check_payment_id(intent_id: str):
+    intent = await stripe_client.v1.payment_intents.retrieve_async(intent_id)
     print(intent.status)

@@ -1,6 +1,6 @@
-from sqlalchemy.orm import Session
-from models import Product, Customer, Order, OrderItem
-from db import engine
+import asyncio
+from models import Product, Customer
+from db import get_db
 import bcrypt
 
 PRODUCTS = [
@@ -17,16 +17,20 @@ def hash_passwd(password):
     return bcrypt.hashpw(password.encode("utf-8"), salt)
 
 
-with Session(engine) as session:
-    # --- Products ---
-    products = [Product(name=product[0], price=product[1]) for product in PRODUCTS]
-    session.add_all(products)
+async def seed_db():
+    async for session in get_db():
+        # --- Products ---
+        products = [Product(name=product[0], price=product[1]) for product in PRODUCTS]
+        session.add_all(products)
 
-    # --- Customers ---
-    alice = Customer(email="alice@example.com", password=hash_passwd(""))
-    bob = Customer(email="bob@example.com", password=hash_passwd("1"))
-    session.add_all([alice, bob])
+        # --- Customers ---
+        alice = Customer(email="alice@example.com", password=hash_passwd(""))
+        bob = Customer(email="bob@example.com", password=hash_passwd("1"))
+        session.add_all([alice, bob])
 
-    session.commit()
+        await session.commit()
 
-print("Database seeded successfully")
+    print("Database seeded successfully")
+
+
+asyncio.run(seed_db())
