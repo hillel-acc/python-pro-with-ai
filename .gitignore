@@ -1,4 +1,5 @@
 rest/shop.db
+shop/shop.db
 celery/out/*
 celery/task_id.txt
 .vscode/
