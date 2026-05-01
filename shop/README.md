@@ -8,4 +8,5 @@ RESTful бекенд магазину.
 Теги (git checkout <tag_name>):
 * shop-with-cart-and-stripe - з заняття про корзину та Страйп
 * async-endpoints-and-sqlalchemy - асинхронні ендпойнти + запити до БД
+
 Поточна версія - спроба зберігати корзину в Редіс
