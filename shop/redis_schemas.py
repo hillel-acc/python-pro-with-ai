@@ -7,8 +7,8 @@ Currency = Annotated[Decimal, Field(max_digits=10, decimal_places=2, ge=0)]
 
 class CartItem(BaseModel):
     model_config = {"from_attributes": True}
-    # price: Currency
     quantity: int = Field(ge=0)
+    price: Currency
 
 
 class Cart(BaseModel):

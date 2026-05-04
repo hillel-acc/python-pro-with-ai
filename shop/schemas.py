@@ -2,7 +2,6 @@ from decimal import Decimal
 from pydantic import BaseModel, Field
 from typing import Annotated
 
-
 Currency = Annotated[Decimal, Field(max_digits=10, decimal_places=2, ge=0)]
 
 
@@ -62,6 +61,7 @@ class CartItem(BaseModel):
     model_config = {"from_attributes": True}
     product_id: int
     quantity: int
+    price: Currency
 
 
 class Cart(BaseModel):

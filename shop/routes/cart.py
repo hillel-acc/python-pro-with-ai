@@ -1,67 +1,48 @@
 from decimal import Decimal
 
 from fastapi import Depends, HTTPException, APIRouter, status
-import redis.asyncio as redis
+from pydantic import TypeAdapter
+from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db, get_cart_items
-from models import Customer, CartItem
+from models import Customer, CartItem, Product
 from schemas import Cart, CartItem as CartItemSchema
 from .security import get_current_user
 from redis_schemas import Cart as RedisCart, CartItem as RedisCartItem
 
 router = APIRouter()
-r = redis.Redis(host="localhost", port=6379, decode_responses=True)
-REDIS_PREFIX = "shop:cart:"
+r = Redis(host="localhost", port=6379, decode_responses=True)
+REDIS_CART_PREFIX = "shop:cart:items"
+REDIS_CART_MODIF_PREFIX = "shop:cart:timestamp"
+adapter = TypeAdapter(list[CartItemSchema])
 
 
 @router.post("/")
-async def add_to_cart(
-    product_id: int,
-    quantity: int,
+async def sync_cart(
+    cart_items: list[CartItemSchema],
     customer: Customer = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ):
-    # 1. Check if the product is already in the cart
-
-    key = REDIS_PREFIX + str(customer.id)
-    cart_item_json: str | None = await r.hget(key, str(product_id))
-    print(cart_item_json)
-    if cart_item_json:
-        cart_item = RedisCartItem.model_validate_json(cart_item_json)
-        cart_item.quantity += quantity
-    else:
-        cart_item = RedisCartItem(quantity=quantity)
-    await r.hset(key, str(product_id), cart_item.model_dump_json())
-
-    # stmt = select(CartItem).where(
-    #     CartItem.customer_id == customer.id, CartItem.product_id == product_id
-    # )
-    # result = await db.execute(stmt)
-    # item = result.scalar()
-
-    # if item:
-    #    # 2. Update existing quantity
-    #    item.quantity += quantity
-    # else:
-    #    # 3. Create a new record
-    #    item = CartItem(
-    #        customer_id=customer.id, product_id=product_id, quantity=quantity
-    #    )
-    #    db.add(item)
-
-    # await db.commit()
+    key = REDIS_CART_PREFIX + str(customer.id)
+    # 1. if client timestamp > server timestamp => delete server cart && store client cart
+    # 2. else send expired error
+    val = adapter.dump_json(cart_items).decode("utf-8")
+    await r.set(key, val)
 
 
-@router.get("/", response_model=Cart)
+@router.get("/", response_model=list[CartItemSchema])
 async def show_cart(
     customer: Customer = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ):
-    cart_items = await get_cart_items(customer.id, db)
-    total_price = sum((item.subtotal for item in cart_items), Decimal(0))
-    return Cart(
-        cart_items=[CartItemSchema.model_validate(item) for item in cart_items],
-        total_price=total_price,
-    )
+    key = REDIS_CART_PREFIX + str(customer.id)
+    items_json = await r.get(key)
+    return adapter.validate_json(items_json)
+
+
+@router.get("/delete_key")
+async def delete_cart(
+    customer: Customer = Depends(get_current_user),
+):
+    key = REDIS_CART_PREFIX + str(customer.id)
+    await r.delete(key)
