@@ -10,3 +10,4 @@ RESTful бекенд магазину.
 * async-endpoints-and-sqlalchemy - асинхронні ендпойнти + запити до БД
 
 Поточна версія - спроба зберігати корзину в Редіс
+Додано pytest-based тест та Github actions workflow
