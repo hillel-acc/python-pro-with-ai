@@ -1,8 +1,10 @@
 rest/shop.db
 shop/shop.db
+node_modules/
 celery/out/*
 celery/task_id.txt
 .vscode/
+.nvmrc
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

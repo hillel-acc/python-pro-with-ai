@@ -1,0 +1,34 @@
+name: Python Lint and Test
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          # uv will look for uv.lock or pyproject.toml to manage the cache
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install 3.14
+
+      - name: Install Project
+        # This creates the venv and installs your project + dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Run Linter (flake8)
+        # 'uv run' executes the command within the synced environment
+        run: uv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Run Tests (pytest)
+        run: uv run pytest
