@@ -21,14 +21,18 @@ jobs:
 
       - name: Set up Python
         run: uv python install 3.14
+        working-directory: ./shop
 
       - name: Install Project
         # This creates the venv and installs your project + dependencies
         run: uv sync --all-extras --dev
+        working-directory: ./shop
 
       - name: Run Linter (flake8)
         # 'uv run' executes the command within the synced environment
         run: uv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        working-directory: ./shop
 
       - name: Run Tests (pytest)
         run: uv run pytest
+        working-directory: ./shop
