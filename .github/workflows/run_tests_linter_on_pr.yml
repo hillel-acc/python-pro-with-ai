@@ -36,3 +36,5 @@ jobs:
       - name: Run Tests (pytest)
         run: uv run pytest
         working-directory: ./shop
+        env:
+          STRIPE_SECRET: "dummy"
