@@ -1,9 +1,20 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import sentry_sdk
+
 import routes.product
 import routes.security
 import routes.cart
 import routes.order
+
+sentry_sdk.init(
+    dsn=os.environ.get("SENTRY_DSN"),
+    # Add data like request headers and IP for users,
+    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+    send_default_pii=True,
+)
 
 app = FastAPI()
 app.add_middleware(
