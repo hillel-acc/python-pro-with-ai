@@ -5,6 +5,8 @@ from sqlalchemy.orm import joinedload
 from models import CartItem, Customer
 
 engine = create_async_engine("sqlite+aiosqlite:///shop.db", echo=True)
+## DB_URL = f"postgresql+asyncpg://{os.environ["DATABASE_URL"]}:{os.environ["POSTGRES_PASSWORD"]}@{os.environ["POSTGRES_HOST"]}:{os.environ["POSTGRES_PORT"]}/{os.environ["POSTGRES_DB"]}"
+# engine = create_async_engine(DB_URL, echo=False)
 SessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
 
 

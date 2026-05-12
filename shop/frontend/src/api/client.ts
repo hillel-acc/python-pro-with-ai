@@ -52,7 +52,7 @@ export interface LoginResponse {
 }
 
 // API functions
-export const getProducts = () => api.get<Product[]>('/products/');
+export const getProducts = () => api.get<Product[]>('/products');
 
 export const login = (data: LoginRequest) =>
   api.post<LoginResponse>(
